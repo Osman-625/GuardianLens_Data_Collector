@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Record {{ item.listing_id[:8] }} · GuardianLens{% endblock %}
+{% block content %}
+{% if page_notice %}
+  <div class="failure-detail" role="alert"><b>Action needs attention.</b><p>{{ page_notice }}</p></div>
+{% endif %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">Lifecycle record</p>
+    <h1>{{ item.title or item.page_title or item.listing_id }}</h1>
+    <p>{{ item.platform|title }} · Captured {{ item.captured_at }} · <span class="status">{{ item.status }}</span></p>
+  </div>
+  {% if reviewable %}
+    {% if item.status == 'under_review' %}
+      <a class="button" href="/review/{{ item.listing_id }}">Continue review</a>
+    {% else %}
+      <form method="post" action="/review/{{ item.listing_id }}/begin">
+        <input type="hidden" name="token" value="{{ token }}">
+        <button type="submit">Begin review</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="review-layout">
+  <section aria-labelledby="capture-evidence-heading">
+    <h2 id="capture-evidence-heading">Capture-time evidence</h2>
+    <p class="muted">The private screenshot records what was visible at capture time. The live listing can change later.</p>
+    {% if item.screenshot_path %}
+      <img class="evidence" src="/asset/screenshot/{{ item.listing_id }}" alt="Private screenshot captured for this listing" loading="lazy">
+    {% else %}
+      <p>Private screenshot is unavailable under the retention policy or because its stored file is missing or unreadable.</p>
+    {% endif %}
+    <h3>Product images</h3>
+    {% if item.images %}
+      <div class="images">
+        {% for image in item.images %}
+          <img src="/asset/image/{{ image.image_id }}" alt="Product image {{ loop.index }}" loading="lazy">
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No product images are stored.</p>
+    {% endif %}
+    {% if item.unavailable_images|default([]) %}
+      <p class="failure-detail">
+        {{ item.unavailable_images|length }} product-image record(s) are missing or unreadable on disk.
+        {% if item.status in ['ready_for_review', 'under_review'] %}
+          Approval is blocked until this is resolved.
+        {% elif item.status == 'approved' %}
+          This approved record no longer has complete retained image evidence; the integrity audit will report it.
+        {% else %}
+          This record has incomplete retained image evidence.
+        {% endif %}
+      </p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="record-fields-heading">
+    <h2 id="record-fields-heading">Structured record</h2>
+    <dl class="record-fields">
+      {% for label, key in [
+        ('Title','title'),('Description','description'),('Category','category'),('Condition','condition'),
+        ('Price','price'),('Currency','currency'),('Location state','location_state'),('Location city','location_city'),
+        ('Account age (days)','account_age_days'),('Seller rating','seller_rating'),('Review count','review_count'),
+        ('Active listing count','active_listing_count'),('Language','language')
+      ] %}
+        <div><dt>{{ label }}</dt><dd>{{ item[key] if item[key] is not none and item[key] != '' else 'Not extracted' }}</dd></div>
+      {% endfor %}
+    </dl>
+    <p><b>Source reference:</b> <a href="{{ item.source_url }}" target="_blank" rel="noreferrer">Open current listing <span class="sr-only">(opens in a new tab)</span></a></p>
+    <p class="muted">Treat the source as a mutable reference. Do not use it to silently overwrite capture-time evidence.</p>
+  </section>
+</div>
+
+<section aria-labelledby="warnings-heading">
+  <h2 id="warnings-heading">Warnings and failure reasons</h2>
+  {% if item.warnings %}
+    <ul class="audit-list">
+      {% for warning in item.warnings %}
+        <li><b>{{ warning.warning_type }}</b> — {{ warning.message }}{% if warning.resolved %} (resolved){% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No warnings are recorded.</p>
+  {% endif %}
+  {% for extraction in item.ai_extractions|default([]) %}
+    {% if extraction.status == 'failed' %}
+      <div class="failure-detail">
+        <b>AI extraction failed</b>
+        <p>Provider: {{ extraction.provider }} · Model: {{ extraction.model }} · {{ extraction.created_at }}</p>
+        <p>{{ extraction.error or 'No safe error detail was recorded.' }}</p>
+      </div>
+    {% endif %}
+  {% endfor %}
+</section>
+
+<section aria-labelledby="provenance-heading">
+  <h2 id="provenance-heading">AI provenance</h2>
+  {% if item.ai_extractions|default([]) %}
+    <div class="table-scroll"><table><thead><tr><th>Time</th><th>Provider</th><th>Model</th><th>Prompt</th><th>Status</th></tr></thead><tbody>
+      {% for extraction in item.ai_extractions %}
+        <tr><td>{{ extraction.created_at }}</td><td>{{ extraction.provider }}</td><td>{{ extraction.model }}</td><td>{{ extraction.prompt_version }}</td><td>{{ extraction.status }}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+  {% else %}
+    <p>No AI extraction has been recorded.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="history-heading">
+  <h2 id="history-heading">Status history</h2>
+  {% if item.history %}
+    <div class="table-scroll"><table><thead><tr><th>Time</th><th>From</th><th>To</th><th>Reason</th></tr></thead><tbody>
+      {% for entry in item.history %}
+        <tr><td>{{ entry.timestamp }}</td><td>{{ entry.from_status or '—' }}</td><td>{{ entry.to_status }}</td><td>{{ entry.reason or '—' }}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+  {% else %}
+    <p>No status history was found.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="review-audit-heading">
+  <h2 id="review-audit-heading">Human review audit</h2>
+  {% if item.review_actions|default([]) %}
+    <div class="table-scroll"><table><thead><tr><th>Time</th><th>Action</th><th>Duration</th><th>Previous values</th><th>Updated values</th></tr></thead><tbody>
+      {% for action in item.review_actions %}
+        <tr><td>{{ action.created_at }}</td><td>{{ action.action }}</td><td>{{ action.duration_seconds if action.duration_seconds is not none else '—' }}</td><td><code class="audit-json">{{ action.previous_data or '—' }}</code></td><td><code class="audit-json">{{ action.updated_data or '—' }}</code></td></tr>
+      {% endfor %}
+    </tbody></table></div>
+  {% else %}
+    <p>No human review action is recorded.</p>
+  {% endif %}
+</section>
+{% endblock %}

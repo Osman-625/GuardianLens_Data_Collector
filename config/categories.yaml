@@ -1,0 +1,25 @@
+categories:
+  - name: Phones
+    target_pct: 15
+  - name: Laptops
+    target_pct: 12
+  - name: Tablets
+    target_pct: 5
+  - name: Audio
+    target_pct: 10
+  - name: Gaming
+    target_pct: 10
+  - name: Cameras
+    target_pct: 8
+  - name: Wearables
+    target_pct: 6
+  - name: Fashion
+    target_pct: 10
+  - name: Home Appliances
+    target_pct: 10
+  - name: Sports
+    target_pct: 7
+  - name: Collectibles
+    target_pct: 5
+  - name: Other
+    target_pct: 2

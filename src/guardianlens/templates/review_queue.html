@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Review Queue · GuardianLens{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><p class="eyebrow">Mandatory human control</p><h1 id="reviewQueueHeading" tabindex="-1">Review Queue</h1><p>Verify the private evidence and every extracted field before choosing an outcome.</p></div>
+  <p><b id="reviewQueueCount">{{ total }}</b> open records · <span id="reviewQueueShown">{{ rows|length }}</span> highest-priority shown (maximum {{ limit }})</p>
+</div>
+<span id="token" hidden>{{ token }}</span>
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Platform</th><th>Listing</th><th>Category</th><th>Price</th><th>Status</th><th><span class="sr-only">Action</span></th></tr></thead>
+    <tbody id="reviewQueueRows">
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.platform|title }}</td>
+        <td><a href="/records/{{ row.listing_id }}">{{ row.title or row.page_title or row.listing_id }}</a></td>
+        <td>{{ row.category or 'Not extracted' }}</td>
+        <td>{% if row.price is not none %}{{ row.currency or 'Not extracted' }} {{ '%.2f'|format(row.price) }}{% else %}Not extracted{% endif %}</td>
+        <td><span class="status">{{ row.status }}</span></td>
+        <td>
+          {% if row.status == 'under_review' %}
+            <a class="button" href="/review/{{ row.listing_id }}">Continue</a>
+          {% else %}
+            <form method="post" action="/review/{{ row.listing_id }}/begin">
+              <input type="hidden" name="token" value="{{ token }}">
+              <button type="submit">Begin review</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p id="reviewQueueEmpty" {% if rows %}hidden{% endif %}>No records are waiting for review. New prepared records will appear automatically.</p>
+<p id="reviewQueueError" class="failure-detail" role="status" hidden></p>
+{% endblock %}

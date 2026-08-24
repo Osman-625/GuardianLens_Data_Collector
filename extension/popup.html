@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GuardianLens Capture</title>
+  <style>
+    body{font-family:system-ui,sans-serif;width:330px;padding:14px;background:#f8fafc;color:#111827}
+    h1{margin:0 0 12px;font-size:1.5rem}
+    label{font-size:12px;display:block;margin-top:10px}
+    input{width:100%;box-sizing:border-box;padding:8px;margin-top:4px;border:1px solid #94a3b8;border-radius:6px}
+    button{width:100%;min-height:44px;margin-top:12px;padding:10px;border:0;border-radius:7px;background:#111827;color:white;font-weight:700;cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+    .secondary{background:#475569}
+    #status{white-space:pre-wrap;font-size:12px;margin-top:12px;padding:8px;background:white;border:1px solid #cbd5e1;border-radius:6px}
+    .note{font-size:11px;color:#475569;line-height:1.4}
+  </style>
+</head>
+<body>
+  <h1>GuardianLens Capture</h1>
+  <p class="note">Open one Carousell Malaysia or Mudah listing yourself, then click Capture. This extension does not discover listings or crawl search pages.</p>
+  <label>Local server URL<input id="server" type="url" value="http://127.0.0.1:8765" spellcheck="false"></label>
+  <label>Local collector token<input id="token" type="password" placeholder="Copy from GuardianLens dashboard" autocomplete="off" spellcheck="false"></label>
+  <button id="save" type="button" class="secondary">Save settings</button>
+  <button id="capture" type="button">Capture Current Listing</button>
+  <div id="status" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Review · GuardianLens{% endblock %}
+{% block content %}
+{% macro missing(value) -%}
+  {% if value is none or value == '' %}<span class="field-state">Not extracted</span>{% endif %}
+{%- endmacro %}
+
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">Human verification</p>
+    <h1>{{ item.title or item.page_title or 'Review listing' }}</h1>
+    <p>{{ item.platform|title }} · <span class="status">{{ item.status }}</span> · captured {{ item.captured_at }}</p>
+  </div>
+  <a class="button secondary" href="/records/{{ item.listing_id }}">View full audit record</a>
+</div>
+
+{% if not review_active %}
+<section class="review-gate">
+  <h2>Start this review intentionally</h2>
+  <p>Opening a record no longer changes its state or starts the timer. Begin when you are ready to verify the evidence and every field.</p>
+  <form method="post" action="/review/{{ item.listing_id }}/begin">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit">Begin review</button>
+  </form>
+</section>
+{% else %}
+<div class="review-layout">
+  <section aria-labelledby="review-evidence-heading">
+    <h2 id="review-evidence-heading">Private capture screenshot</h2>
+    <p class="muted">This is capture-time evidence. The live marketplace page may have changed.</p>
+    {% if item.screenshot_path %}
+      <img class="evidence" src="/asset/screenshot/{{ item.listing_id }}" alt="Private listing screenshot captured for review">
+    {% else %}
+      <p>Screenshot unavailable under the retention policy or because its stored file is missing or unreadable.</p>
+    {% endif %}
+    <h3>Product images</h3>
+    {% if item.images %}
+      <div class="images">
+        {% for image in item.images %}<img src="/asset/image/{{ image.image_id }}" alt="Product image {{ loop.index }}" loading="lazy">{% endfor %}
+      </div>
+    {% else %}
+      <p>No product images are stored.</p>
+    {% endif %}
+    {% if item.unavailable_images|default([]) %}
+      <p class="failure-detail">{{ item.unavailable_images|length }} product-image record(s) are missing or unreadable on disk. Do not approve this record.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="review-form-heading">
+    <h2 id="review-form-heading">Extracted form</h2>
+    {% if error_message %}
+      <div class="failure-detail" role="alert"><b>Review action was not completed.</b><p>{{ error_message }}</p></div>
+    {% endif %}
+    {% if item.warnings %}
+      <div class="warnings" role="status"><b>Warnings</b><ul>{% for warning in item.warnings %}<li>{{ warning.warning_type }}: {{ warning.message }}</li>{% endfor %}</ul></div>
+    {% endif %}
+    <form method="post" action="/review/{{ item.listing_id }}/save" class="form" id="reviewEditForm">
+      <input type="hidden" name="token" value="{{ token }}">
+      <label>Title {{ missing(item.title) }}<input name="title" value="{{ item.title or '' }}" autocomplete="off"></label>
+      <label>Description {{ missing(item.description) }}<textarea name="description">{{ item.description or '' }}</textarea></label>
+      <label>Category {{ missing(item.category) }}<select name="category"><option value="">Not extracted</option>{% if item.category and item.category not in categories %}<option value="{{ item.category }}" selected>{{ item.category }} (not configured)</option>{% endif %}{% for category in categories %}<option value="{{ category }}" {% if item.category==category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select></label>
+      <label>Condition {{ missing(item.condition) }}<input name="condition" value="{{ item.condition or '' }}" autocomplete="off"></label>
+      <label>Price {{ missing(item.price) }}<input name="price" type="number" min="0" step="0.01" value="{{ item.price if item.price is not none else '' }}"></label>
+      <label>Currency {{ missing(item.currency) }}<input name="currency" value="{{ item.currency or '' }}" autocomplete="off"></label>
+      <label>Location state {{ missing(item.location_state) }}<input name="location_state" value="{{ item.location_state or '' }}" autocomplete="off"></label>
+      <label>Location city {{ missing(item.location_city) }}<input name="location_city" value="{{ item.location_city or '' }}" autocomplete="off"></label>
+      <label>Account age (days) {{ missing(item.account_age_days) }}<input name="account_age_days" type="number" min="0" value="{{ item.account_age_days if item.account_age_days is not none else '' }}"></label>
+      <label>Seller rating {{ missing(item.seller_rating) }}<input name="seller_rating" type="number" min="0" step="0.01" value="{{ item.seller_rating if item.seller_rating is not none else '' }}"></label>
+      <label>Review count {{ missing(item.review_count) }}<input name="review_count" type="number" min="0" value="{{ item.review_count if item.review_count is not none else '' }}"></label>
+      <label>Active listing count {{ missing(item.active_listing_count) }}<input name="active_listing_count" type="number" min="0" value="{{ item.active_listing_count if item.active_listing_count is not none else '' }}"></label>
+      <label>Language {{ missing(item.language) }}<input name="language" value="{{ item.language or '' }}" autocomplete="off"></label>
+      <div class="actions">
+        <button type="submit" name="submit_action" value="save" class="secondary">Save edits</button>
+        <button type="submit" name="submit_action" value="approve" id="approveUnchanged">Approve</button>
+        <button type="submit" name="submit_action" value="approve">Edit + Approve</button>
+      </div>
+      <p id="unsavedReviewNotice" class="field-state" hidden>You have unsaved edits. Save them or use Edit + Approve; Reject, Skip, and Flag discard those edits.</p>
+    </form>
+    <div class="actions review-outcomes" aria-label="Review outcomes">
+      <form method="post" action="/review/{{ item.listing_id }}/action/rejected" data-discard-edits><input type="hidden" name="token" value="{{ token }}"><button type="submit" class="danger">Reject</button></form>
+      <form method="post" action="/review/{{ item.listing_id }}/action/skipped" data-discard-edits><input type="hidden" name="token" value="{{ token }}"><button type="submit" class="secondary">Skip</button></form>
+      <form method="post" action="/review/{{ item.listing_id }}/action/flagged" data-discard-edits><input type="hidden" name="token" value="{{ token }}"><button type="submit" class="secondary">Flag</button></form>
+    </div>
+    <p><b>Source reference:</b> <a href="{{ item.source_url }}" target="_blank" rel="noreferrer">Open current listing <span class="sr-only">(opens in a new tab)</span></a></p>
+    <p class="muted">If the live source differs from the screenshot or draft, do not silently overwrite either; verify and record the human correction.</p>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

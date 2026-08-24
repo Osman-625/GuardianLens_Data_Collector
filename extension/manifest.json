@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "GuardianLens Manual Collection",
+  "version": "2.0.0",
+  "description": "Manually capture the marketplace listing currently open in the active tab and send it to the local GuardianLens collector.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_popup": "popup.html", "default_title": "GuardianLens Capture"}
+}

@@ -1,0 +1,8 @@
+total_target: 2500
+platforms:
+  carousell:
+    target: 1500
+    ratio: 0.60
+  mudah:
+    target: 1000
+    ratio: 0.40

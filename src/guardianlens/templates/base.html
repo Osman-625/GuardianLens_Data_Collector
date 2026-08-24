@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}GuardianLens Collector{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<header>
+  <div><strong>GuardianLens</strong> <span>Data Collection</span></div>
+  <nav aria-label="Primary">
+    <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Dashboard</a>
+    <a href="/review" {% if request.url.path.startswith('/review') %}aria-current="page"{% endif %}>Review Queue</a>
+    <a href="/records" {% if request.url.path.startswith('/records') %}aria-current="page"{% endif %}>All Records</a>
+  </nav>
+</header>
+<main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
+<script src="/static/app.js" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

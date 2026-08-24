@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}All Records · GuardianLens{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">Complete lifecycle index</p>
+    <h1>All records</h1>
+    <p>Search and filter every capture, including terminal and failure states.</p>
+  </div>
+  <p><b>{{ total }}</b> matching record(s)</p>
+</div>
+
+<section aria-labelledby="record-filters-heading">
+  <h2 id="record-filters-heading">Filters</h2>
+  <form method="get" action="/records" class="controls record-filters">
+    <label>Search
+      <input name="q" value="{{ filters.query }}" maxlength="200" placeholder="Title, listing ID, or marketplace ID">
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="">All statuses</option>
+        {% for value in statuses %}
+          <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ value|replace('_',' ')|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Platform
+      <select name="platform">
+        <option value="">Both platforms</option>
+        <option value="carousell" {% if filters.platform == 'carousell' %}selected{% endif %}>Carousell</option>
+        <option value="mudah" {% if filters.platform == 'mudah' %}selected{% endif %}>Mudah</option>
+      </select>
+    </label>
+    <button type="submit">Apply filters</button>
+    <a class="button secondary" href="/records">Clear</a>
+  </form>
+</section>
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Platform</th><th>Listing</th><th>Category</th><th>Price</th><th>Status</th><th>Captured</th><th>Updated</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.platform|title }}</td>
+          <td><a href="/records/{{ row.listing_id }}">{{ row.title or row.page_title or row.marketplace_listing_id or row.listing_id }}</a></td>
+          <td>{{ row.category or 'Not extracted' }}</td>
+          <td>{% if row.price is not none %}{{ row.currency or 'Not extracted' }} {{ '%.2f'|format(row.price) }}{% else %}Not extracted{% endif %}</td>
+          <td><span class="status">{{ row.status }}</span></td>
+          <td>{{ row.captured_at }}</td>
+          <td>{{ row.updated_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">No records match these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<nav class="pagination" aria-label="Record pages">
+  {% if previous_url %}<a class="button secondary" href="{{ previous_url }}">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ page_count }}</span>
+  {% if next_url %}<a class="button secondary" href="{{ next_url }}">Next</a>{% endif %}
+</nav>
+{% endblock %}
