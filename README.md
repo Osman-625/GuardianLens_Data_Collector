@@ -1,4 +1,4 @@
-# GuardianLens Data Collector v2.0.0
+# GuardianLens Data Collector v_1.0.0
 
 Manual marketplace listing capture, AI-assisted field extraction, privacy processing, duplicate checks, product-image storage, human review, and approved-dataset export for GuardianLens FYP2.
 
